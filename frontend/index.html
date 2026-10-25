@@ -36,6 +36,7 @@
     <div style="display: flex; gap: 10px; margin-top: 8px;">
       <button id="sendQueryButton" onclick="sendQuery()">Send Query</button>
       <button id="clearChatButton" onclick="clearChat()" style="background: #64748b;">Clear Chat</button>
+      <button id="exportChatButton" onclick="exportChat()" style="background: #0284c7;">Export Chat</button>
     </div>
   </div>
 
@@ -118,6 +119,28 @@
         document.getElementById("chatHistory").innerHTML = `<div class="msg" style="color: #666;"><em>Conversation history cleared.</em></div>`;
       } catch (err) {
         alert("Failed to clear chat history.");
+      }
+    }
+
+    async function exportChat() {
+      try {
+        const res = await fetch(`${API}/export-chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: "demo_session" })
+        });
+        const data = await res.json();
+        const blob = new Blob([data.transcript || "No transcript available."], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `nexus_chat_transcript_${Date.now()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        alert("Failed to export chat transcript.");
       }
     }
   </script>

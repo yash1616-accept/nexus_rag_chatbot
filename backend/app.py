@@ -119,6 +119,38 @@ def clear_chat_history():
 
     return jsonify({"message": f"Conversation history for session '{session_id}' cleared successfully."}), 200
 
+@app.route('/api/export-chat', methods=['POST'])
+def export_chat():
+    """Export conversation history as a formatted transcript."""
+    data = request.json or {}
+    session_id = data.get('session_id', 'default_session')
+
+    if mongo_available:
+        rec = history_collection.find_one({"session_id": session_id})
+        history = rec.get('history', []) if rec else []
+    else:
+        history = in_memory_history.get(session_id, [])
+
+    transcript_lines = [
+        "==================================================",
+        "          NEXUS RAG CHATBOT TRANSCRIPT",
+        f" Session ID: {session_id}",
+        "==================================================\n"
+    ]
+
+    if not history:
+        transcript_lines.append("No conversation recorded for this session yet.")
+    else:
+        for idx, turn in enumerate(history, 1):
+            transcript_lines.append(f"[{idx}] User: {turn.get('user', '')}")
+            transcript_lines.append(f"    AI:   {turn.get('bot', '')}\n")
+
+    return jsonify({
+        "session_id": session_id,
+        "total_turns": len(history),
+        "transcript": "\n".join(transcript_lines)
+    }), 200
+
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     """Upload and index documents (.pdf, .txt, .md)."""
